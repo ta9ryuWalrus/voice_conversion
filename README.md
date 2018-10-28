@@ -5,4 +5,6 @@
 3. 02timewarping.pyを実行する
 4. 03makelist.shを実行する
 5. 04train.pyを実行する
-6. 05convert.pyを実行する
+6. 05convert.pyを実行する  
+
+* dataというフォルダには変換した音声が5サンプル分あります。sourceをtargetに変換しようとして出力されたのがresultです。数字が同じものは同じセリフのものです。
