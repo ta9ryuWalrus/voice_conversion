@@ -121,15 +121,13 @@ class VCDNN(Chain):
 if __name__ == "__main__":
     x_train, y_train = get_dataset()
 
-    batch_size = 1
-    n_epoch = 50
+    n_epoch = 
     dim = 25
-    #n_units = 128
     n_units = 64
     N = len(x_train)
 
     model = VCDNN(dim,n_units)
-    serializers.load_npz("model/mgc/vcmodel2.npz", model)
+    serializers.load_npz("model/mgc/vcmodel2.npz", model) #初回はこの行はコメントアウトする
     model.l2.reset_state()
     model.l3.reset_state()
     model.l4.reset_state()
@@ -147,8 +145,6 @@ if __name__ == "__main__":
 
         indices = np.random.permutation(N)
         for i in range(0, N):
-            #x_batch = x_train[i*batch_size : (i+1)*batch_size]
-            #y_batch = y_train[i*batch_size : (i+1)*batch_size]
             x_batch = x_train[indices[i]]
             y_batch = y_train[indices[i]]
             model.zerograds()
