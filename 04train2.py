@@ -91,13 +91,16 @@ class myLSTM(L.NStepBiLSTM):
 
 
 class VCDNN(Chain):
-        def __init__(self, dim=25, n_units=64):
+        def __init__(self, dim=25, n_units=32):
             super(VCDNN, self).__init__(
-                    l1=L.Linear(dim, n_units),#25->64
-                    l2=myLSTM(in_size = n_units, out_size = n_units, dropout = 0.5),#64->128
-                    l3=myLSTM(in_size = 2*n_units, out_size = n_units, dropout = 0.5),#128->128
-                    l4=myLSTM(in_size = 2*n_units, out_size = n_units//2, dropout = 0.5),#128->64
-                    l5=L.Linear(n_units,dim)#64->25
+                    l1=L.Linear(dim, n_units),
+                    l2=myLSTM(in_size = n_units, out_size = n_units, dropout = 0.5),
+                    l3=myLSTM(in_size = 2*n_units, out_size = 2*n_units, dropout = 0.5),
+                    l4=myLSTM(in_size = 4*n_units, out_size = 2*n_units, dropout = 0.5),
+                    l5=myLSTM(in_size = 4*n_units, out_size = n_units, dropout = 0.5),
+                    l6=myLSTM(in_size = 2*n_units, out_size = n_units//2, dropout = 0.5),
+                    l7=myLSTM(in_size = n_units, out_size = n_units//2, dropout = 0.5),
+                    l8=L.Linear(n_units,dim)
                     )
 
         def __call__(self, x_data, y_data,dim=25):
@@ -112,7 +115,10 @@ class VCDNN(Chain):
             h3 = self.l3(h2)
             h4 = self.l4(h3)
             h5 = self.l5(h4)
-            return h5
+            h6 = self.l6(h5)
+            h7 = self.l7(h6)
+            h8 = self.l8(h7)
+            return h8
 
         def get_predata(self, x):
             return self.predict(Variable(x.astype(xp.float32))).data
@@ -129,10 +135,13 @@ if __name__ == "__main__":
     N = len(x_train)
 
     model = VCDNN(dim,n_units)
-    serializers.load_npz("model/mgc/vcmodel2.npz", model)
+    #serializers.load_npz("model/mgc/vcmodel3.npz", model)
     model.l2.reset_state()
     model.l3.reset_state()
     model.l4.reset_state()
+    model.l5.reset_state()
+    model.l6.reset_state()
+    model.l7.reset_state()
     model.to_gpu()
 
     optimizer = optimizers.Adam()
@@ -155,6 +164,9 @@ if __name__ == "__main__":
             model.l2.reset_state()
             model.l3.reset_state()
             model.l4.reset_state()
+            model.l5.reset_state()
+            model.l6.reset_state()
+            model.l7.reset_state()
             loss = model(x_batch, y_batch, dim)
             sum_loss += loss.data
             loss.backward()
@@ -165,7 +177,7 @@ if __name__ == "__main__":
                 model.to_cpu()
                 if not os.path.isdir("model/mgc"):
                     os.mkdir("model/mgc")
-                serializers.save_npz("model/mgc/vcmodel4.npz", model)
+                serializers.save_npz("model/mgc/vcmodel3.npz", model)
                 model.to_gpu()
 
             print("epoch: {}/{}  data: {}/{}  sum_loss: {}".format(epoch, n_epoch, i, N, sum_loss))
@@ -174,4 +186,4 @@ if __name__ == "__main__":
     model.to_cpu()
     if not os.path.isdir("model/mgc"):
         os.mkdir("model/mgc")
-    serializers.save_npz("model/mgc/vcmodel4.npz",model)
+    serializers.save_npz("model/mgc/vcmodel3.npz",model)
