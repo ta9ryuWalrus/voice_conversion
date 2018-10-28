@@ -13,20 +13,8 @@ from scipy.io import wavfile
 import os
 import sys
 import time
-import sklearn
-import pickle
 import cupy as cp
 
-
-"""
-パラメータ
-model2:３層のやつ100エポック
-model3:６層のやつ50エポック
-model4:３層のやつ150エポック
-
-結果
-wav3layer:３層のやつ150エポック
-"""
 
 gpu_device = 0
 cuda.get_device(gpu_device).use()
@@ -89,32 +77,14 @@ class VCDNN(Chain):
         def __init__(self, dim=25, n_units=64):
             super(VCDNN, self).__init__(
                     l1=L.Linear(dim, n_units),
-                    #l2=L.Linear(n_units,n_units),
-                    #l2 = L.NStepBiLSTM(n_layers = 2, in_size = n_units, out_size = n_units, drop_out = 0.5)
                     l2=myLSTM(in_size = n_units, out_size = n_units),
                     l3=myLSTM(in_size = 2*n_units, out_size = n_units),
                     l4=myLSTM(in_size = 2*n_units, out_size = n_units//2),
                     l5=L.Linear(n_units,dim))
 
-        """
-        def __init__(self, dim = 25, n_units=32):
-            super(VCDNN, self).__init__(
-                l1=L.Linear(dim, n_units),
-                l2=myLSTM(in_size = n_units, out_size = n_units),
-                l3=myLSTM(in_size = 2*n_units, out_size = 2*n_units),
-                l4=myLSTM(in_size = 4*n_units, out_size = 2*n_units),
-                l5=myLSTM(in_size = 4*n_units, out_size = n_units),
-                l6=myLSTM(in_size = 2*n_units, out_size = n_units//2),
-                l7=myLSTM(in_size = n_units, out_size = n_units//2),
-                l8=L.Linear(n_units,dim)
-            )
-        """
-
-
         def __call__(self, x_data, y_data, dim=25):
                 x = Variable(x_data.astype(xp.float32).reshape(len(x_data),dim))
                 y = Variable(y_data.astype(xp.float32).reshape(len(y_data),dim))
-
                 h3 = self.predict(x)
                 return F.mean_squared_error(h3, y)
 
@@ -127,41 +97,21 @@ class VCDNN(Chain):
             h5 = self.l5(h4)
             return h5
 
-        """
-        def predict(self, x):
-            h1 = F.relu(self.l1(x))
-            h2 = self.l2(h1)
-            h3 = self.l3(h2)
-            h4 = self.l4(h3)
-            h5 = self.l5(h4)
-            h6 = self.l6(h5)
-            h7 = self.l7(h6)
-            h8 = self.l8(h7)
-            return h8
-        """
-
         def get_predata(self, x):
             return self.predict(Variable(x.astype(xp.float32))).data
 
 
 
 if __name__ == "__main__":
-    # x_train, y_train = get_dataset()
-    # parameters for training
-    #batchsize = 64
     dim = 25
     n_units = 64
-    #n_units = 32
 
     model = VCDNN(dim,n_units)
     model.to_cpu()
     xp = np
-    #serializers.load_npz("model/mgc/vcmodel2.npz", model)
     serializers.load_npz("model/mgc/vcmodel4.npz",model)
     model.to_gpu()
     xp = cuda.cupy
-
-    f0model = pickle.load(open("model_f0/f0model.sav", 'rb'))
 
     # test data
     x = []
@@ -188,9 +138,6 @@ if __name__ == "__main__":
         outfile = "result/wav3layer/{}.wav".format(datalist[i])
         with open("data/male/f0/{}.f0".format(datalist[i]),"rb") as f:
             f0 = np.fromfile(f, dtype="<f8", sep="")
-            #log_f0 = np.log(np.clip(f0, 1e-8, f0))
-            #conv_log_f0 = f0model.coef_ * log_f0 + f0model.intercept_
-            #f0 = np.exp(conv_log_f0).flatten()
             f0 = 2.0 * f0
         with open("data/male/ap/{}.ap".format(datalist[i]),"rb") as f:
             ap = np.fromfile(f, dtype="<f8", sep="")
